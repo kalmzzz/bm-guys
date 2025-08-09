@@ -1,0 +1,10 @@
+[build]
+# Railway will detect the Dockerfile automatically
+
+[deploy]
+startCommand = "uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"
+
+[env]
+PORT = "8080"
+# DATABASE_URL will be provided by Railway Postgres plugin or manually set
+# OPENAI_API_KEY is optional but recommended

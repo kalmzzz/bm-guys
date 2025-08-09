@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>X Superfan Agents</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; }
+    h1, h2 { margin: 8px 0; }
+    form { border: 1px solid #ddd; padding: 12px; margin: 12px 0; border-radius: 8px; }
+    input, select, textarea { width: 100%; padding: 8px; margin: 6px 0; }
+    .row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .small { max-width: 720px; }
+    .pill { display: inline-block; padding: 4px 8px; margin: 2px; background: #f2f2f2; border-radius: 999px; }
+  </style>
+</head>
+<body>
+  <h1>X Superfan Agents</h1>
+
+  <h2>Create Agent</h2>
+  <form action="/agents/create" method="post" class="small">
+    <label>Name</label>
+    <input name="name" placeholder="agent-1" required />
+
+    <div class="row">
+      <div>
+        <label>Brand Name</label>
+        <input name="brand_name" placeholder="ACME Widgets" />
+      </div>
+      <div>
+        <label>Description / Topic</label>
+        <input name="description" placeholder="What should this agent generally talk about?" />
+      </div>
+    </div>
+
+    <div class="grid-3">
+      <div><label><input type="checkbox" name="enable_post" /> Enable Posts</label></div>
+      <div><label><input type="checkbox" name="enable_reply" /> Enable Replies</label></div>
+      <div><label><input type="checkbox" name="enable_like" /> Enable Likes</label></div>
+      <div><label><input type="checkbox" name="enable_retweet" /> Enable Retweets</label></div>
+    </div>
+
+    <div class="grid-3">
+      <div><label>Post interval (s)</label><input name="post_interval_s" type="number" value="14400" /></div>
+      <div><label>Reply interval (s)</label><input name="reply_interval_s" type="number" value="120" /></div>
+      <div><label>Like interval (s)</label><input name="like_interval_s" type="number" value="600" /></div>
+      <div><label>Retweet interval (s)</label><input name="retweet_interval_s" type="number" value="36000" /></div>
+    </div>
+
+    <div class="row">
+      <div><label>CTA every N posts</label><input name="cta_every_n_posts" type="number" placeholder="e.g., 3" /></div>
+      <div><label>CTA every N replies</label><input name="cta_every_n_replies" type="number" placeholder="e.g., 3" /></div>
+    </div>
+
+    <h3>X Credentials (required)</h3>
+    <div class="row">
+      <div><label>Consumer Key</label><input name="x_consumer_key" required /></div>
+      <div><label>Consumer Secret</label><input name="x_consumer_secret" required /></div>
+      <div><label>Access Token</label><input name="x_access_token" required /></div>
+      <div><label>Access Token Secret</label><input name="x_access_token_secret" required /></div>
+      <div><label>Bearer Token (optional)</label><input name="x_bearer_token" /></div>
+    </div>
+
+    <button type="submit">Create</button>
+  </form>
+
+  <h2>Agents</h2>
+  {% for a in agents %}
+    <div style="border:1px solid #e5e5e5; padding:12px; border-radius:8px; margin: 12px 0;">
+      <h3>{{ a.name }} — {{ a.brand_name or '' }}</h3>
+      <p>Actions: 
+        {% if a.enable_post %}<span class="pill">posts every {{ a.post_interval_s }}s</span>{% endif %}
+        {% if a.enable_reply %}<span class="pill">replies every {{ a.reply_interval_s }}s</span>{% endif %}
+        {% if a.enable_like %}<span class="pill">likes</span>{% endif %}
+        {% if a.enable_retweet %}<span class="pill">retweets</span>{% endif %}
+      </p>
+      {% if a.cta_every_n_posts %}<div class="pill">CTA every {{ a.cta_every_n_posts }} posts</div>{% endif %}
+      {% if a.cta_every_n_replies %}<div class="pill">CTA every {{ a.cta_every_n_replies }} replies</div>{% endif %}
+
+      <form action="/agents/{{ a.id }}/reschedule" method="post">
+        <button>Reschedule Jobs</button>
+      </form>
+
+      <div class="row">
+        <form action="/agents/{{ a.id }}/cta" method="post">
+          <h4>Add CTA</h4>
+          <input name="url" placeholder="https://brand.com" required />
+          <input name="label" placeholder="Label (optional)" />
+          <label><input type="checkbox" name="for_posts" checked /> For posts</label>
+          <label><input type="checkbox" name="for_replies" /> For replies</label>
+          <button type="submit">Add CTA</button>
+        </form>
+
+        <form action="/agents/{{ a.id }}/target" method="post">
+          <h4>Add Target User</h4>
+          <input name="handle" placeholder="target_handle" required />
+          <button type="submit">Add Target</button>
+        </form>
+      </div>
+
+      <div class="row">
+        <form action="/agents/{{ a.id }}/keyword" method="post">
+          <h4>Add Keyword Trigger</h4>
+          <input name="keyword" placeholder="e.g., acme widgets" required />
+          <button type="submit">Add Keyword</button>
+        </form>
+
+        <form action="/agents/{{ a.id }}/source" method="post">
+          <h4>Add Source Account (for rewriting)</h4>
+          <input name="handle" placeholder="source_handle" required />
+          <button type="submit">Add Source</button>
+        </form>
+      </div>
+
+      <form action="/agents/{{ a.id }}/style/upload" method="post">
+        <h4>Upload Example Tweets (paste CSV or one per line)</h4>
+        <textarea name="tweets_csv" rows="6" placeholder="tweet 1\ntweet 2\n..."></textarea>
+        <button type="submit">Build Style</button>
+      </form>
+
+      <form action="/agents/{{ a.id }}/style/fetch" method="post">
+        <h4>Build Style From X Handle</h4>
+        <input name="handle" placeholder="brand_handle" required />
+        <input name="num_tweets" type="number" value="50" />
+        <button type="submit">Fetch & Build</button>
+      </form>
+
+      {% if a.style_profile %}
+      <details>
+        <summary>Style Profile</summary>
+        <pre>{{ a.style_profile }}</pre>
+      </details>
+      {% endif %}
+
+      <div>
+        <strong>CTAs:</strong>
+        {% for c in a.ctas %}
+          <span class="pill">{{ c.label or c.url }}</span>
+        {% endfor %}
+      </div>
+      <div>
+        <strong>Targets:</strong>
+        {% for t in a.targets %}
+          <span class="pill">@{{ t.handle }}</span>
+        {% endfor %}
+      </div>
+      <div>
+        <strong>Keywords:</strong>
+        {% for k in a.keywords %}
+          <span class="pill">{{ k.keyword }}</span>
+        {% endfor %}
+      </div>
+      <div>
+        <strong>Sources:</strong>
+        {% for s in a.sources %}
+          <span class="pill">@{{ s.handle }}</span>
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+</body>
+</html>
